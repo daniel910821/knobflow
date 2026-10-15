@@ -1,0 +1,126 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: knobflow\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-08 15:30-0500\n"
+"PO-Revision-Date: 2026-10-08 15:30-0500\n"
+"Last-Translator: Felipe\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "KnobFlow"
+msgstr "KnobFlow"
+
+msgid "Display & Behavior"
+msgstr "Visualización y Comportamiento"
+
+msgid "Configure on-screen display and volume parameters."
+msgstr "Configura el visualizador en pantalla y los parámetros de volumen."
+
+msgid "Stock GNOME OSD (Native)"
+msgstr "OSD nativo de GNOME"
+
+msgid "Custom HUD Switcher (Centered)"
+msgstr "HUD Switcher personalizado (Centrado)"
+
+msgid "OSD Display Style"
+msgstr "Estilo del OSD en Pantalla"
+
+msgid "Choose between GNOME native volume OSD and custom centered HUD"
+msgstr "Elige entre el OSD nativo de GNOME y el HUD centrado personalizado"
+
+msgid "Volume Step (%)"
+msgstr "Paso de volumen (%)"
+
+msgid "Percentage volume change per knob rotation step"
+msgstr "Porcentaje de cambio de volumen por cada paso del knob"
+
+msgid "Only Active Audio Streams"
+msgstr "Solo aplicaciones emitiendo sonido activo"
+
+msgid "Exclude applications that are currently silent or paused"
+msgstr "Excluye del ciclo aplicaciones con audio en silencio o pausadas"
+
+msgid "HUD Duration (ms)"
+msgstr "Duración del HUD (ms)"
+
+msgid "Display duration for custom HUD before fading out"
+msgstr "Tiempo en milisegundos antes de que el HUD personalizado se oculte"
+
+msgid "Knob Shortcuts & Hardware Mapping"
+msgstr "Atajos y Asignación del Knob"
+
+msgid "Select common keyboard presets or record custom shortcuts."
+msgstr "Selecciona un preset de hardware o graba una tecla personalizada."
+
+msgid "Knob Click (Cycle / Mute)"
+msgstr "Clic en el Knob (Ciclo / Mute)"
+
+msgid "Short click cycles active apps; double-click or hold toggles mute"
+msgstr "Un clic avanza entre apps activas; doble clic o sostenido mutea"
+
+msgid "Knob Turn Up (Volume Up)"
+msgstr "Girar Knob Arriba (Subir Volumen)"
+
+msgid "Increases volume of selected app or system"
+msgstr "Aumenta el volumen de la app o sistema seleccionado"
+
+msgid "Knob Turn Down (Volume Down)"
+msgstr "Girar Knob Abajo (Bajar Volumen)"
+
+msgid "Decreases volume of selected app or system"
+msgstr "Reduce el volumen de la app o sistema seleccionado"
+
+msgid "Assign / Record"
+msgstr "Grabar / Asignar"
+
+msgid "Reset to default preset"
+msgstr "Restablecer a valor por defecto"
+
+msgid "Assign Key / Preset"
+msgstr "Asignar Señal / Tecla"
+
+msgid "Select a hardware preset or press any key on your keyboard:"
+msgstr "Elige un preset para el knob o presiona cualquier tecla en el teclado:"
+
+msgid "Common Knob Presets"
+msgstr "Señales de Knob Habituales"
+
+msgid "Standard Knob Click"
+msgstr "Clic del Knob Estándar"
+
+msgid "Hardware KEY_MUTE signal (XF86AudioMute)"
+msgstr "Código de hardware KEY_MUTE (XF86AudioMute)"
+
+msgid "Standard Volume Up"
+msgstr "Giro Arriba Estándar"
+
+msgid "Hardware KEY_VOLUMEUP signal (XF86AudioRaiseVolume)"
+msgstr "Código de hardware KEY_VOLUMEUP (XF86AudioRaiseVolume)"
+
+msgid "Standard Volume Down"
+msgstr "Giro Abajo Estándar"
+
+msgid "Hardware KEY_VOLUMEDOWN signal (XF86AudioLowerVolume)"
+msgstr "Código de hardware KEY_VOLUMEDOWN (XF86AudioLowerVolume)"
+
+msgid "Play / Pause Click"
+msgstr "Clic Play / Pause"
+
+msgid "Used by Keychron and QMK/VIA custom knob profiles"
+msgstr "Usado en teclados Keychron o con firmware VIA/QMK"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Application"
+msgstr "Aplicación"
+
+msgid "MUTED"
+msgstr "SILENCIADO"

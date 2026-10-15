@@ -1,0 +1,84 @@
+/* KnobFlow GNOME Shell Stylesheet - Translucent & Compact */
+
+.knobflow-hud {
+    background-color: rgba(22, 22, 28, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 12px 18px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    spacing: 10px;
+}
+
+.knobflow-cards-row {
+    spacing: 8px;
+}
+
+.knobflow-card {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 12px;
+    padding: 8px 10px;
+    min-width: 60px;
+    spacing: 4px;
+    transition-duration: 150ms;
+}
+
+.knobflow-card-active {
+    background-color: st-transparentize(-st-accent-color, 0.76);
+    border: 2px solid -st-accent-color;
+    box-shadow: 0 0 10px st-transparentize(-st-accent-color, 0.5);
+}
+
+.knobflow-card-icon {
+    icon-size: 28px;
+}
+
+.knobflow-card-name {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+}
+
+.knobflow-card-name-active {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.knobflow-detail-box {
+    spacing: 6px;
+    min-width: 240px;
+}
+
+.knobflow-detail-title {
+    font-size: 10.5pt;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.knobflow-detail-percent {
+    font-size: 10.5pt;
+    font-weight: bold;
+    color: -st-accent-color;
+}
+
+.knobflow-detail-percent-muted {
+    color: #e01b24;
+}
+
+.knobflow-bar-track {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    height: 6px;
+    width: 240px;
+}
+
+.knobflow-bar-fill {
+    background-color: -st-accent-color;
+    border-radius: 4px;
+    height: 6px;
+}
+
+.knobflow-bar-fill-muted {
+    background-color: #e01b24;
+}

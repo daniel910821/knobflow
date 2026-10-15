@@ -1,0 +1,16 @@
+# Build and packaging artifacts
+*.zip
+schemas/gschemas.compiled
+locale/*/LC_MESSAGES/*.mo
+
+# Temporary & backup files
+*~
+*.swp
+*.bak
+*.log
+
+# Operating System & IDE metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

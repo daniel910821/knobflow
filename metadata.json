@@ -1,0 +1,18 @@
+{
+  "uuid": "knobflow@felipe.local",
+  "name": "KnobFlow",
+  "description": "Control active application volumes and system audio using your mechanical keyboard knob",
+  "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
+    "49",
+    "50",
+    "51"
+  ],
+  "url": "https://github.com/felipe/knobflow",
+  "settings-schema": "org.gnome.shell.extensions.knobflow",
+  "gettext-domain": "knobflow",
+  "version": 1
+}

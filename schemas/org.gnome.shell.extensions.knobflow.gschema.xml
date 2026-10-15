@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.knobflow" path="/org/gnome/shell/extensions/knobflow/">
+    
+    <key name="volume-step" type="i">
+      <default>5</default>
+      <summary>Volume Step (%)</summary>
+      <description>Percentage of volume to increase or decrease on each knob rotation step.</description>
+    </key>
+
+    <key name="active-only" type="b">
+      <default>false</default>
+      <summary>Filter active audio streams only</summary>
+      <description>When true, only applications currently emitting sound are cycled through.</description>
+    </key>
+
+    <key name="hud-timeout-ms" type="i">
+      <default>2000</default>
+      <summary>HUD Timeout (ms)</summary>
+      <description>Milliseconds the HUD switcher remains visible after knob interaction.</description>
+    </key>
+
+    <key name="osd-style" type="s">
+      <choices>
+        <choice value="stock"/>
+        <choice value="custom"/>
+      </choices>
+      <default>'stock'</default>
+      <summary>OSD Display Style</summary>
+      <description>Choose between native GNOME stock volume OSD ('stock') and centered custom HUD switcher ('custom').</description>
+    </key>
+
+    <key name="cycle-shortcut" type="as">
+      <default>['XF86AudioMute', 'AudioMute']</default>
+      <summary>Knob Click Shortcut (Cycle / Mute)</summary>
+      <description>Shortcut or signal emitted when the knob is pressed. Single click cycles active apps; double-click/hold toggles mute.</description>
+    </key>
+
+    <key name="volume-up-shortcut" type="as">
+      <default>['XF86AudioRaiseVolume', 'AudioRaiseVolume']</default>
+      <summary>Knob Turn Up Shortcut (Volume Up)</summary>
+      <description>Shortcut or signal emitted when the knob is rotated clockwise.</description>
+    </key>
+
+    <key name="volume-down-shortcut" type="as">
+      <default>['XF86AudioLowerVolume', 'AudioLowerVolume']</default>
+      <summary>Knob Turn Down Shortcut (Volume Down)</summary>
+      <description>Shortcut or signal emitted when the knob is rotated counter-clockwise.</description>
+    </key>
+
+  </schema>
+</schemalist>
