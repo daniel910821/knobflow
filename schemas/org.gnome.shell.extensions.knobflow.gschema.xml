@@ -8,6 +8,18 @@
       <description>Percentage of volume to increase or decrease on each knob rotation step.</description>
     </key>
 
+    <key name="fine-volume-threshold" type="i">
+      <default>20</default>
+      <summary>Fine Volume Threshold (%)</summary>
+      <description>Volume percentage below which finer volume stepping is activated. Set to 0 to disable.</description>
+    </key>
+
+    <key name="fine-volume-step" type="i">
+      <default>1</default>
+      <summary>Fine Volume Step (%)</summary>
+      <description>Percentage of volume to increase or decrease per step when volume is at or below the fine threshold.</description>
+    </key>
+
     <key name="active-only" type="b">
       <default>false</default>
       <summary>Filter active audio streams only</summary>

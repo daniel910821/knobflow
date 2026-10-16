@@ -10,6 +10,7 @@ This project was developed with the assistance of Google Gemini. All code has be
 
 - **Knob Rotation (Up / Down)**:
   - Adjusts the volume of the currently selected target in configurable percentage steps (default: 5%).
+  - Supports configurable fine/granular volume stepping (e.g. 1% steps below 20% volume, and 5% steps above).
 - **Knob Click (Loop Cycle)**:
   - A short click cycles sequentially through active targets:
     `System / Master -> App 1 -> App 2 -> ... -> System`.
@@ -58,7 +59,9 @@ This project was developed with the assistance of Google Gemini. All code has be
 | Setting | Options / Range | Default | Description |
 |---|---|---|---|
 | **OSD Display Style** | `Stock GNOME OSD`, `Custom HUD Switcher` | `Stock` | Choose between native GNOME volume overlay or centered HUD |
-| **Volume Step** | `1% - 25%` | `5%` | Percentage volume increment/decrement per knob step |
+| **Volume Step** | `1% - 25%` | `5%` | Standard percentage volume increment/decrement per knob step |
+| **Fine Volume Threshold** | `0% - 50%` | `20%` | Volume percentage below which fine volume stepping is activated (0 to disable) |
+| **Fine Volume Step** | `1% - 5%` | `1%` | Granular volume increment/decrement when at or below threshold |
 | **Only Active Streams** | `true / false` | `false` | Exclude silent or paused applications from cycle |
 | **HUD Duration** | `500ms - 5000ms` | `2000ms` | Display duration before HUD fades out (if using Custom HUD) |
 | **Knob Click** | Key shortcut / Presets | `XF86AudioMute` | Shortcut mapped to knob click |

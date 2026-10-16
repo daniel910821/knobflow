@@ -70,7 +70,41 @@ export default class KnobFlowPreferences extends ExtensionPreferences {
         settings.bind('volume-step', stepRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         generalGroup.add(stepRow);
 
-        // 3. Active-only apps filter switch
+        // 3. Fine Volume Threshold (%) Spin Row
+        const thresholdRow = new Adw.SpinRow({
+            title: _('Fine Volume Threshold (%)'),
+            subtitle: _('Threshold below which fine volume stepping is active (0 to disable)'),
+            adjustment: new Gtk.Adjustment({
+                lower: 0,
+                upper: 50,
+                step_increment: 1,
+                page_increment: 5,
+                value: settings.get_int('fine-volume-threshold'),
+            }),
+        });
+        settings.bind('fine-volume-threshold', thresholdRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        generalGroup.add(thresholdRow);
+
+        // 4. Fine Volume Step (%) Spin Row
+        const fineStepRow = new Adw.SpinRow({
+            title: _('Fine Volume Step (%)'),
+            subtitle: _('Volume percentage change when below the fine threshold'),
+            adjustment: new Gtk.Adjustment({
+                lower: 1,
+                upper: 5,
+                step_increment: 1,
+                page_increment: 1,
+                value: settings.get_int('fine-volume-step'),
+            }),
+        });
+        settings.bind('fine-volume-step', fineStepRow, 'value', Gio.SettingsBindFlags.DEFAULT);
+        thresholdRow.connect('notify::value', () => {
+            fineStepRow.sensitive = thresholdRow.value > 0;
+        });
+        fineStepRow.sensitive = settings.get_int('fine-volume-threshold') > 0;
+        generalGroup.add(fineStepRow);
+
+        // 5. Active-only apps filter switch
         const activeOnlyRow = new Adw.SwitchRow({
             title: _('Only Active Audio Streams'),
             subtitle: _('Exclude applications that are currently silent or paused'),
@@ -79,7 +113,7 @@ export default class KnobFlowPreferences extends ExtensionPreferences {
         settings.bind('active-only', activeOnlyRow, 'active', Gio.SettingsBindFlags.DEFAULT);
         generalGroup.add(activeOnlyRow);
 
-        // 4. Custom HUD display duration (ms)
+        // 6. Custom HUD display duration (ms)
         const timeoutRow = new Adw.SpinRow({
             title: _('HUD Duration (ms)'),
             subtitle: _('Display duration for custom HUD before fading out'),
@@ -94,7 +128,7 @@ export default class KnobFlowPreferences extends ExtensionPreferences {
         settings.bind('hud-timeout-ms', timeoutRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         generalGroup.add(timeoutRow);
 
-        // 5. Verbose debug logging switch
+        // 7. Verbose debug logging switch
         const debugRow = new Adw.SwitchRow({
             title: _('Debug Logging'),
             subtitle: _('Print detailed audio stream detection and knob events to journalctl'),

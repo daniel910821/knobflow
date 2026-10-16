@@ -130,3 +130,16 @@ msgstr "Registro de depuración (Debug)"
 
 msgid "Print detailed audio stream detection and knob events to journalctl"
 msgstr "Registrar detección de streams de audio y eventos del knob en journalctl"
+
+msgid "Fine Volume Threshold (%)"
+msgstr "Umbral de volumen fino (%)"
+
+msgid "Threshold below which fine volume stepping is active (0 to disable)"
+msgstr "Porcentaje por debajo del cual se aplica un paso más granular (0 para desactivar)"
+
+msgid "Fine Volume Step (%)"
+msgstr "Paso de volumen fino (%)"
+
+msgid "Volume percentage change when below the fine threshold"
+msgstr "Porcentaje de cambio de volumen al estar en o por debajo del umbral fino"
+

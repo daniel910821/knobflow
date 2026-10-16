@@ -243,10 +243,47 @@ class KeyManager extends GObject.Object {
     }
 
     /**
+     * Calculates the volume step percentage based on current volume and fine-step settings.
+     * When current volume is at or below the fine threshold, smaller granular steps are used.
+     *
+     * @param {boolean} isIncrement - true for volume up, false for volume down
+     * @returns {number} The step delta (+n or -n)
+     */
+    _calculateStep(isIncrement) {
+        const normalStep = Math.max(1, this._settings.get_int('volume-step') || 5);
+        const threshold = this._settings.get_int('fine-volume-threshold');
+        const fineStep = Math.max(1, this._settings.get_int('fine-volume-step') || 1);
+
+        // If fine volume control is disabled (threshold <= 0), use normal step
+        if (threshold <= 0)
+            return isIncrement ? normalStep : -normalStep;
+
+        const target = this._audioManager.getActiveTarget();
+        const currentVol = (target && typeof target.volumePercent === 'number') ? target.volumePercent : 0;
+
+        if (isIncrement) {
+            if (currentVol < threshold) {
+                const step = Math.min(fineStep, threshold - currentVol);
+                return Math.max(1, step);
+            }
+            return normalStep;
+        } else {
+            if (currentVol <= threshold) {
+                return -fineStep;
+            } else if (currentVol - normalStep < threshold) {
+                // Land cleanly on threshold before stepping down with fineStep
+                const step = currentVol - threshold;
+                return -Math.max(1, step);
+            }
+            return -normalStep;
+        }
+    }
+
+    /**
      * Handler for volume up knob rotation: increments volume and displays OSD.
      */
     _onVolumeUp() {
-        const step = this._settings.get_int('volume-step') || 5;
+        const step = this._calculateStep(true);
         this._audioManager.changeVolume(step);
         const target = this._audioManager.getActiveTarget();
         this._logDebug(`Knob Turn UP (+${step}%): target=${target ? target.name : 'none'} (new vol: ${target ? target.volumePercent : 0}%)`);
@@ -257,10 +294,10 @@ class KeyManager extends GObject.Object {
      * Handler for volume down knob rotation: decrements volume and displays OSD.
      */
     _onVolumeDown() {
-        const step = this._settings.get_int('volume-step') || 5;
-        this._audioManager.changeVolume(-step);
+        const step = this._calculateStep(false);
+        this._audioManager.changeVolume(step);
         const target = this._audioManager.getActiveTarget();
-        this._logDebug(`Knob Turn DOWN (-${step}%): target=${target ? target.name : 'none'} (new vol: ${target ? target.volumePercent : 0}%)`);
+        this._logDebug(`Knob Turn DOWN (${step}%): target=${target ? target.name : 'none'} (new vol: ${target ? target.volumePercent : 0}%)`);
         this._osdManager.showOSD();
     }
 
