@@ -1,4 +1,4 @@
-# KnobFlow for GNOME (GNOME Shell 45 - 51)
+# KnobFlow for GNOME (GNOME Shell 50 - 51)
 
 A native GNOME Shell extension that turns your mechanical keyboard volume knob into a per-application audio mixer and system volume controller.
 
