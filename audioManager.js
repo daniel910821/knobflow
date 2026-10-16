@@ -5,6 +5,7 @@ import Meta from 'gi://Meta';
 import Gvc from 'gi://Gvc';
 import { gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Volume from 'resource:///org/gnome/shell/ui/status/volume.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 /**
  * AudioManager
@@ -305,8 +306,34 @@ export const AudioManager = GObject.registerClass({
     }
 
     /**
+     * Inspects active MPRIS players managed by GNOME Shell.
+     * Returns a list of playing track titles.
+     */
+    _getPlayingMprisTracks() {
+        const tracks = [];
+        const messageList = Main.panel?.statusArea?.dateMenu?._messageList;
+        const mediaSource = messageList ? messageList._mediaSource : null;
+        if (mediaSource && mediaSource.players) {
+            for (const player of mediaSource.players) {
+                if (player.status === 'Playing') {
+                    if (player.trackTitle)
+                        tracks.push(player.trackTitle.toLowerCase());
+                    if (Array.isArray(player.trackArtists)) {
+                        for (const artist of player.trackArtists) {
+                            if (artist)
+                                tracks.push(artist.toLowerCase());
+                        }
+                    }
+                }
+            }
+        }
+        return tracks;
+    }
+
+    /**
      * Inspects browser windows to identify specific active web players.
-     * Crucially differentiates between 'YouTube Music' and standard 'YouTube'.
+     * Crucially differentiates between 'YouTube Music' and standard 'YouTube'
+     * by scoring candidates across all windows rather than relying on first match.
      */
     _detectBrowserMediaTitle(app, appId, usedMediaTitles) {
         const windows = [];
@@ -352,6 +379,12 @@ export const AudioManager = GObject.registerClass({
         this._logDebug(`Browser detection found ${windows.length} window(s) for appId="${appId}"`);
 
         const tracker = Shell.WindowTracker.get_default();
+        const playingTracks = this._getPlayingMprisTracks();
+        if (playingTracks.length > 0) {
+            this._logDebug(`  Active MPRIS playing tracks: ${playingTracks.join(', ')}`);
+        }
+
+        const candidates = [];
 
         for (const win of windows) {
             const title = (win.get_title() || '').trim();
@@ -366,6 +399,7 @@ export const AudioManager = GObject.registerClass({
                 continue;
 
             let candidate = null;
+            let score = 0;
 
             // 1. YouTube Music MUST be evaluated before standard YouTube!
             // Matches titles like: "Song Name • Artist - YouTube Music", "YouTube Music", "music.youtube.com", or PWA name "YouTube Music"
@@ -377,38 +411,76 @@ export const AudioManager = GObject.registerClass({
                 (winAppId && /youtube\s*music/i.test(winAppId))
             ) {
                 candidate = 'YouTube Music';
+                score = 80;
             } else if (
                 /youtube/i.test(title) ||
                 /\byoutube\.com\b/i.test(title) ||
                 (winAppName && /youtube/i.test(winAppName))
             ) {
                 candidate = 'YouTube';
+                score = 40;
             } else if (/spotify/i.test(title) || (winAppName && /spotify/i.test(winAppName))) {
                 candidate = 'Spotify';
+                score = 80;
             } else if (/soundcloud/i.test(title)) {
                 candidate = 'SoundCloud';
+                score = 80;
             } else if (/apple\s*music/i.test(title)) {
                 candidate = 'Apple Music';
+                score = 80;
             } else if (/amazon\s*music/i.test(title)) {
                 candidate = 'Amazon Music';
+                score = 80;
             } else if (/netflix/i.test(title)) {
                 candidate = 'Netflix';
+                score = 40;
             } else if (/twitch/i.test(title)) {
                 candidate = 'Twitch';
+                score = 40;
             } else if (/tidal/i.test(title)) {
                 candidate = 'Tidal';
+                score = 80;
             } else if (/deezer/i.test(title)) {
                 candidate = 'Deezer';
+                score = 80;
             } else if (/bandcamp/i.test(title)) {
                 candidate = 'Bandcamp';
+                score = 80;
             }
 
-            if (candidate) {
-                const alreadyUsed = usedMediaTitles.has(candidate);
-                this._logDebug(`    -> Detected web player: "${candidate}" (already claimed: ${alreadyUsed})`);
-                if (!alreadyUsed) {
-                    return candidate;
-                }
+            if (!candidate)
+                continue;
+
+            // Dedicated Web App / PWA bonus: standalone apps are explicitly launched for audio playback
+            const isDedicatedApp = (winAppName && winAppName.toLowerCase() === candidate.toLowerCase()) ||
+                wmClass.toLowerCase().startsWith('chrome-') ||
+                wmClass.toLowerCase().startsWith('crx_');
+            if (isDedicatedApp)
+                score += 100;
+
+            // MPRIS active playing track correlation bonus
+            const lowerTitle = title.toLowerCase();
+            if (playingTracks.some(track => track.length > 3 && lowerTitle.includes(track)))
+                score += 50;
+
+            // Active / focused window bonus
+            if (win.has_focus && win.has_focus())
+                score += 10;
+
+            candidates.push({ candidate, score, title, winAppName });
+        }
+
+        // Sort candidates by score descending to prioritize dedicated apps and music players over generic tabs
+        candidates.sort((a, b) => b.score - a.score);
+
+        this._logDebug(`  Candidate matches (sorted): ${candidates.map(c => `${c.candidate} [score:${c.score}]`).join(', ') || 'none'}`);
+
+        // Select the highest-scoring candidate not yet claimed
+        for (const { candidate } of candidates) {
+            const alreadyUsed = usedMediaTitles.has(candidate);
+            if (!alreadyUsed) {
+                this._logDebug(`    -> Selected candidate: "${candidate}"`);
+                return candidate;
             }
         }
 
