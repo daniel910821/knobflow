@@ -168,6 +168,7 @@ class OsdManager extends GObject.Object {
 
     _onTargetUpdated() {
         if (this._container.visible) {
+            this._renderCards();
             this._updateDetail();
         }
     }
@@ -206,10 +207,16 @@ class OsdManager extends GObject.Object {
                 });
             } else {
                 iconActor = new St.Icon({
-                    icon_name: target.iconName || 'audio-speakers-symbolic',
+                    icon_name: target.iconName || 'audio-volume-high-symbolic',
                     style_class: 'knobflow-card-icon',
                 });
             }
+
+            // Ensure symbolic icons (e.g. System speaker/volume) are rendered in bright white rather than dark theme fallback
+            if (target.isSystem || (target.iconName && target.iconName.includes('symbolic'))) {
+                iconActor.style = isActive ? 'color: #ffffff;' : 'color: rgba(255, 255, 255, 0.9);';
+            }
+
             card.add_child(iconActor);
 
             // Card name label (truncated to 10 chars to maintain compact HUD dimensions)

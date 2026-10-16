@@ -147,6 +147,22 @@ export const AudioManager = GObject.registerClass({
     }
 
     /**
+     * Determines the appropriate symbolic volume icon for the system sink.
+     */
+    _getSystemIconName(stream) {
+        if (!stream || stream.is_muted)
+            return 'audio-volume-muted-symbolic';
+        const percent = this._calcVolumePercent(stream);
+        if (percent === 0)
+            return 'audio-volume-muted-symbolic';
+        if (percent < 33)
+            return 'audio-volume-low-symbolic';
+        if (percent < 66)
+            return 'audio-volume-medium-symbolic';
+        return 'audio-volume-high-symbolic';
+    }
+
+    /**
      * Emits target-updated when an application changes its volume internally.
      */
     _onStreamVolumeNotify(stream) {
@@ -154,6 +170,10 @@ export const AudioManager = GObject.registerClass({
         if (target) {
             target.volumePercent = this._calcVolumePercent(stream);
             target.isMuted = Boolean(stream.is_muted);
+            if (target.isSystem) {
+                target.iconName = this._getSystemIconName(stream);
+                target.gicon = new Gio.ThemedIcon({ name: target.iconName });
+            }
             this.emit('target-updated', target.id);
         }
     }
@@ -292,14 +312,18 @@ export const AudioManager = GObject.registerClass({
             /chrome|chromium|firefox|brave|edge|opera|browser/i.test(appId || '');
 
         if (isBrowser) {
-            const mediaTitle = this._detectBrowserMediaTitle(app, appId, usedMediaTitles);
-            if (mediaTitle) {
-                name = mediaTitle;
-                usedMediaTitles.add(mediaTitle);
+            const mediaInfo = this._detectBrowserMediaTitle(app, appId, usedMediaTitles);
+            if (mediaInfo) {
+                name = mediaInfo.name;
+                if (mediaInfo.gicon)
+                    gicon = mediaInfo.gicon;
+                if (mediaInfo.iconName)
+                    iconName = mediaInfo.iconName;
+                usedMediaTitles.add(mediaInfo.name);
             }
         }
 
-        this._logDebug(`Stream id=${stream.get_id()} finalized target name: "${name}"`);
+        this._logDebug(`Stream id=${stream.get_id()} finalized target name: "${name}" (icon: ${iconName || (gicon ? 'custom-gicon' : 'fallback')})`);
 
         const fallbackIcon = iconName || 'audio-card-symbolic';
         return { name, gicon, iconName: fallbackIcon };
@@ -458,6 +482,29 @@ export const AudioManager = GObject.registerClass({
             if (isDedicatedApp)
                 score += 100;
 
+            // Resolve the specific application icon for this candidate window
+            let candidateGicon = winApp ? winApp.get_icon() : null;
+            let candidateIconName = null;
+
+            // If the window is a generic Chrome window, but candidate is YouTube Music, Spotify, etc.,
+            // lookup an installed dedicated desktop launcher or running app for the candidate
+            if (!candidateGicon || (winAppName === 'Google Chrome' && candidate !== 'Google Chrome')) {
+                const appSys = Shell.AppSystem.get_default();
+                const lookupIds = [
+                    'chrome-cinhimbnkkaeohfgghhklpknlkffjgod-Default.desktop',
+                    'youtube-music.desktop',
+                    'com.github.th_ch.youtube_music.desktop',
+                    'spotify.desktop',
+                ];
+                for (const id of lookupIds) {
+                    const foundApp = appSys.lookup_app(id);
+                    if (foundApp && foundApp.get_name().toLowerCase().includes(candidate.toLowerCase())) {
+                        candidateGicon = foundApp.get_icon();
+                        break;
+                    }
+                }
+            }
+
             // MPRIS active playing track correlation bonus
             const lowerTitle = title.toLowerCase();
             if (playingTracks.some(track => track.length > 3 && lowerTitle.includes(track)))
@@ -467,7 +514,14 @@ export const AudioManager = GObject.registerClass({
             if (win.has_focus && win.has_focus())
                 score += 10;
 
-            candidates.push({ candidate, score, title, winAppName });
+            candidates.push({
+                candidate,
+                score,
+                gicon: candidateGicon,
+                iconName: candidateIconName,
+                title,
+                winAppName,
+            });
         }
 
         // Sort candidates by score descending to prioritize dedicated apps and music players over generic tabs
@@ -476,11 +530,15 @@ export const AudioManager = GObject.registerClass({
         this._logDebug(`  Candidate matches (sorted): ${candidates.map(c => `${c.candidate} [score:${c.score}]`).join(', ') || 'none'}`);
 
         // Select the highest-scoring candidate not yet claimed
-        for (const { candidate } of candidates) {
-            const alreadyUsed = usedMediaTitles.has(candidate);
+        for (const item of candidates) {
+            const alreadyUsed = usedMediaTitles.has(item.candidate);
             if (!alreadyUsed) {
-                this._logDebug(`    -> Selected candidate: "${candidate}"`);
-                return candidate;
+                this._logDebug(`    -> Selected candidate: "${item.candidate}" (hasCustomIcon: ${Boolean(item.gicon)})`);
+                return {
+                    name: item.candidate,
+                    gicon: item.gicon,
+                    iconName: item.iconName,
+                };
             }
         }
 
@@ -499,11 +557,12 @@ export const AudioManager = GObject.registerClass({
         const defaultSink = this._control.get_default_sink();
         if (defaultSink) {
             this._connectStream(defaultSink);
+            const sysIconName = this._getSystemIconName(defaultSink);
             newTargets.push({
                 id: 'system',
                 name: _('System'),
-                gicon: new Gio.ThemedIcon({ name: 'audio-speakers-symbolic' }),
-                iconName: 'audio-speakers-symbolic',
+                gicon: new Gio.ThemedIcon({ name: sysIconName }),
+                iconName: sysIconName,
                 volumePercent: this._calcVolumePercent(defaultSink),
                 isMuted: Boolean(defaultSink.is_muted),
                 isSystem: true,
