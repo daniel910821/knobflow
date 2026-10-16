@@ -14,7 +14,7 @@ msgstr ""
 msgid "KnobFlow"
 msgstr "KnobFlow"
 
-msgid "Display & Behavior"
+msgid "Display &amp; Behavior"
 msgstr "Visualización y Comportamiento"
 
 msgid "Configure on-screen display and volume parameters."
@@ -50,7 +50,7 @@ msgstr "Duración del HUD (ms)"
 msgid "Display duration for custom HUD before fading out"
 msgstr "Tiempo en milisegundos antes de que el HUD personalizado se oculte"
 
-msgid "Knob Shortcuts & Hardware Mapping"
+msgid "Knob Shortcuts &amp; Hardware Mapping"
 msgstr "Atajos y Asignación del Knob"
 
 msgid "Select common keyboard presets or record custom shortcuts."
@@ -124,3 +124,9 @@ msgstr "Aplicación"
 
 msgid "MUTED"
 msgstr "SILENCIADO"
+
+msgid "Debug Logging"
+msgstr "Registro de depuración (Debug)"
+
+msgid "Print detailed audio stream detection and knob events to journalctl"
+msgstr "Registrar detección de streams de audio y eventos del knob en journalctl"

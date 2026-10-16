@@ -31,7 +31,7 @@ export default class KnobFlowPreferences extends ExtensionPreferences {
 
         // ── Group 1: General & Display ──────────────────────────────────────
         const generalGroup = new Adw.PreferencesGroup({
-            title: _('Display & Behavior'),
+            title: _('Display &amp; Behavior'),
             description: _('Configure on-screen display and volume parameters.'),
         });
         page.add(generalGroup);
@@ -94,9 +94,18 @@ export default class KnobFlowPreferences extends ExtensionPreferences {
         settings.bind('hud-timeout-ms', timeoutRow, 'value', Gio.SettingsBindFlags.DEFAULT);
         generalGroup.add(timeoutRow);
 
+        // 5. Verbose debug logging switch
+        const debugRow = new Adw.SwitchRow({
+            title: _('Debug Logging'),
+            subtitle: _('Print detailed audio stream detection and knob events to journalctl'),
+            active: settings.get_boolean('debug-logging'),
+        });
+        settings.bind('debug-logging', debugRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+        generalGroup.add(debugRow);
+
         // ── Group 2: Knob Shortcuts & Hardware Mapping ───────────────────────
         const keysGroup = new Adw.PreferencesGroup({
-            title: _('Knob Shortcuts & Hardware Mapping'),
+            title: _('Knob Shortcuts &amp; Hardware Mapping'),
             description: _('Select common keyboard presets or record custom shortcuts.'),
         });
         page.add(keysGroup);

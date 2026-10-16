@@ -48,5 +48,11 @@
       <description>Shortcut or signal emitted when the knob is rotated counter-clockwise.</description>
     </key>
 
+    <key name="debug-logging" type="b">
+      <default>true</default>
+      <summary>Enable Debug Logging</summary>
+      <description>When true, prints detailed stream detection and knob events to journalctl.</description>
+    </key>
+
   </schema>
 </schemalist>

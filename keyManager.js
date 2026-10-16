@@ -234,11 +234,22 @@ class KeyManager extends GObject.Object {
     }
 
     /**
+     * Internal debug logging helper, active when 'debug-logging' is enabled in settings.
+     */
+    _logDebug(message) {
+        if (this._settings && this._settings.get_boolean('debug-logging')) {
+            console.log(`[KnobFlow Debug] ${message}`);
+        }
+    }
+
+    /**
      * Handler for volume up knob rotation: increments volume and displays OSD.
      */
     _onVolumeUp() {
         const step = this._settings.get_int('volume-step') || 5;
         this._audioManager.changeVolume(step);
+        const target = this._audioManager.getActiveTarget();
+        this._logDebug(`Knob Turn UP (+${step}%): target=${target ? target.name : 'none'} (new vol: ${target ? target.volumePercent : 0}%)`);
         this._osdManager.showOSD();
     }
 
@@ -248,6 +259,8 @@ class KeyManager extends GObject.Object {
     _onVolumeDown() {
         const step = this._settings.get_int('volume-step') || 5;
         this._audioManager.changeVolume(-step);
+        const target = this._audioManager.getActiveTarget();
+        this._logDebug(`Knob Turn DOWN (-${step}%): target=${target ? target.name : 'none'} (new vol: ${target ? target.volumePercent : 0}%)`);
         this._osdManager.showOSD();
     }
 
@@ -269,6 +282,8 @@ class KeyManager extends GObject.Object {
 
             // Execute MUTE / UNMUTE on the active audio stream
             this._audioManager.toggleMute();
+            const target = this._audioManager.getActiveTarget();
+            this._logDebug(`Knob Double-Click (Mute toggle): target=${target ? target.name : 'none'} (muted: ${target ? target.isMuted : false})`);
             this._osdManager.showOSD();
             return;
         }
@@ -284,7 +299,8 @@ class KeyManager extends GObject.Object {
         // Single click: wait 260ms before cycling to ensure it is not a double-click
         this._pendingCycleTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 260, () => {
             this._pendingCycleTimeoutId = 0;
-            this._audioManager.cycleNext();
+            const target = this._audioManager.cycleNext();
+            this._logDebug(`Knob Click (Cycle): switched to target=${target ? target.name : 'none'} (id:${target ? target.id : 'none'})`);
             this._osdManager.showOSD();
             return GLib.SOURCE_REMOVE;
         });

@@ -91,9 +91,19 @@ export const AudioManager = GObject.registerClass({
     }
 
     /**
+     * Internal debug logging helper, active when 'debug-logging' is enabled in settings.
+     */
+    _logDebug(message) {
+        if (this._settings && this._settings.get_boolean('debug-logging')) {
+            console.log(`[KnobFlow Debug] ${message}`);
+        }
+    }
+
+    /**
      * Triggered when Gvc finishes connecting to the audio server.
      */
     _onStateChanged() {
+        this._logDebug(`Mixer control state: ${this._control.get_state()}`);
         if (this._control.get_state() === Gvc.MixerControlState.READY) {
             this._updateTargets();
         }
@@ -102,7 +112,8 @@ export const AudioManager = GObject.registerClass({
     /**
      * Triggered when a new audio stream appears (e.g., an app starts playback).
      */
-    _onStreamAdded(_id) {
+    _onStreamAdded(id) {
+        this._logDebug(`Stream added to mixer: id=${id}`);
         this._updateTargets();
     }
 
@@ -110,6 +121,7 @@ export const AudioManager = GObject.registerClass({
      * Triggered when an audio stream closes. Reverts to System if the closed stream was active.
      */
     _onStreamRemoved(id) {
+        this._logDebug(`Stream removed from mixer: id=${id}`);
         const streamIdStr = id.toString();
         if (this._activeTargetId === streamIdStr) {
             this._activeTargetId = 'system';
@@ -194,6 +206,8 @@ export const AudioManager = GObject.registerClass({
         const streamDesc = stream.get_description() || '';
         const iconName = stream.get_icon_name() || '';
         let gicon = stream.get_gicon();
+
+        this._logDebug(`Evaluating stream id=${stream.get_id()}: appId="${appId}", streamName="${streamName}", desc="${streamDesc}", icon="${iconName}"`);
 
         const appSys = Shell.AppSystem.get_default();
         let app = null;
@@ -284,6 +298,8 @@ export const AudioManager = GObject.registerClass({
             }
         }
 
+        this._logDebug(`Stream id=${stream.get_id()} finalized target name: "${name}"`);
+
         const fallbackIcon = iconName || 'audio-card-symbolic';
         return { name, gicon, iconName: fallbackIcon };
     }
@@ -294,39 +310,80 @@ export const AudioManager = GObject.registerClass({
      */
     _detectBrowserMediaTitle(app, appId, usedMediaTitles) {
         const windows = [];
-        if (app && app.get_windows) {
+        if (app && typeof app.get_windows === 'function') {
             windows.push(...app.get_windows());
         }
 
-        // If app.get_windows() is empty on Wayland, inspect tabList strictly for this browser's windows
-        if (windows.length === 0 && global.display && global.display.get_tab_list) {
+        // Also inspect open windows to catch Chrome PWAs (StartupWMClass=crx_*) or detached browser windows
+        if (global.display && typeof global.display.get_tab_list === 'function') {
             const tabList = global.display.get_tab_list(Meta.TabList.NORMAL, null);
-            const browserTokens = ['chrome', 'chromium', 'firefox', 'brave', 'edge', 'opera'].filter(
-                t => (appId || '').toLowerCase().includes(t) || (app && (app.get_id() || '').toLowerCase().includes(t))
-            );
+            const tracker = Shell.WindowTracker.get_default();
 
             for (const win of tabList) {
+                if (windows.includes(win))
+                    continue;
+
                 const wmClass = (win.get_wm_class() || '').toLowerCase();
                 const gtkId = (win.get_gtk_application_id() || '').toLowerCase();
-                if (browserTokens.some(t => wmClass.includes(t) || gtkId.includes(t))) {
+                const winApp = tracker ? tracker.get_window_app(win) : null;
+                const winAppId = winApp ? (winApp.get_id() || '').toLowerCase() : '';
+                const winAppName = winApp ? (winApp.get_name() || '').toLowerCase() : '';
+
+                // Match browser windows and web apps (Chrome PWAs use crx_ or chrome-*)
+                const isBrowserOrWebApp =
+                    wmClass.includes('chrome') ||
+                    wmClass.includes('chromium') ||
+                    wmClass.includes('firefox') ||
+                    wmClass.includes('brave') ||
+                    wmClass.includes('edge') ||
+                    wmClass.includes('opera') ||
+                    wmClass.startsWith('crx_') ||
+                    gtkId.includes('chrome') ||
+                    winAppId.includes('chrome') ||
+                    winAppName.includes('chrome') ||
+                    winAppName.includes('youtube');
+
+                if (isBrowserOrWebApp) {
                     windows.push(win);
                 }
             }
         }
 
+        this._logDebug(`Browser detection found ${windows.length} window(s) for appId="${appId}"`);
+
+        const tracker = Shell.WindowTracker.get_default();
+
         for (const win of windows) {
             const title = (win.get_title() || '').trim();
-            if (!title)
+            const wmClass = win.get_wm_class() || '';
+            const winApp = tracker ? tracker.get_window_app(win) : null;
+            const winAppName = winApp ? (winApp.get_name() || '').trim() : '';
+            const winAppId = winApp ? (winApp.get_id() || '').trim() : '';
+
+            this._logDebug(`  - Checking window: title="${title}", wmClass="${wmClass}", winApp="${winAppName}"`);
+
+            if (!title && !winAppName)
                 continue;
 
             let candidate = null;
 
             // 1. YouTube Music MUST be evaluated before standard YouTube!
-            if (/youtube\s*music/i.test(title)) {
+            // Matches titles like: "Song Name • Artist - YouTube Music", "YouTube Music", "music.youtube.com", or PWA name "YouTube Music"
+            if (
+                /youtube\s*music/i.test(title) ||
+                /music\.youtube/i.test(title) ||
+                /yt\s*music/i.test(title) ||
+                (winAppName && /youtube\s*music/i.test(winAppName)) ||
+                (winAppId && /youtube\s*music/i.test(winAppId))
+            ) {
                 candidate = 'YouTube Music';
-            } else if (/youtube/i.test(title)) {
+            } else if (
+                /youtube/i.test(title) ||
+                /\byoutube\.com\b/i.test(title) ||
+                (winAppName && /youtube/i.test(winAppName))
+            ) {
                 candidate = 'YouTube';
-            } else if (/spotify/i.test(title)) {
+            } else if (/spotify/i.test(title) || (winAppName && /spotify/i.test(winAppName))) {
                 candidate = 'Spotify';
             } else if (/soundcloud/i.test(title)) {
                 candidate = 'SoundCloud';
@@ -346,9 +403,12 @@ export const AudioManager = GObject.registerClass({
                 candidate = 'Bandcamp';
             }
 
-            // Claim the candidate if not already used by another stream from this browser
-            if (candidate && !usedMediaTitles.has(candidate)) {
-                return candidate;
+            if (candidate) {
+                const alreadyUsed = usedMediaTitles.has(candidate);
+                this._logDebug(`    -> Detected web player: "${candidate}" (already claimed: ${alreadyUsed})`);
+                if (!alreadyUsed) {
+                    return candidate;
+                }
             }
         }
 
@@ -359,6 +419,7 @@ export const AudioManager = GObject.registerClass({
      * Rebuilds the internal list of audio targets from Gvc sink inputs.
      */
     _updateTargets() {
+        this._logDebug('--- Updating Audio Targets ---');
         const activeOnly = this._settings.get_boolean('active-only');
         const newTargets = [];
 
@@ -419,6 +480,11 @@ export const AudioManager = GObject.registerClass({
             this._activeTargetId = 'system';
             this.emit('active-target-changed', 'system');
         }
+
+        this._logDebug(
+            `Targets updated: total=${this._targets.length} (active=${this._activeTargetId}): ` +
+            this._targets.map(t => `${t.name} (id:${t.id}, vol:${t.volumePercent}%, muted:${t.isMuted})`).join(', ')
+        );
 
         this.emit('targets-changed');
     }

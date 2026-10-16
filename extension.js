@@ -26,6 +26,10 @@ export default class KnobFlowExtension extends Extension {
 
         // 3. Captures keyboard knob inputs and routes actions to audio & OSD managers
         this._keyManager = new KeyManager(this._audioManager, this._osdManager, this._settings);
+
+        if (this._settings.get_boolean('debug-logging')) {
+            console.log('[KnobFlow Debug] Extension enabled successfully');
+        }
     }
 
     /**
@@ -33,6 +37,10 @@ export default class KnobFlowExtension extends Extension {
      * in reverse dependency order to ensure complete garbage collection.
      */
     disable() {
+        if (this._settings && this._settings.get_boolean('debug-logging')) {
+            console.log('[KnobFlow Debug] Disabling extension');
+        }
+
         // Unregister global keybindings and restore system media keys
         this._keyManager.destroy();
         this._keyManager = null;
