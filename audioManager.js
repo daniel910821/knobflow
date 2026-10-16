@@ -183,12 +183,12 @@ export const AudioManager = GObject.registerClass({
 
     /**
      * Resolves human-readable application name and icons for an audio stream.
-     * Uses a 3-tier lookup hierarchy:
+     * Uses a multi-tier lookup hierarchy:
      * 1. Direct Shell.AppSystem lookup using application_id, icon_name, or stream name.
      * 2. Fuzzy matching against currently running applications.
-     * 3. Browser window title detection (identifies web players like Spotify Web, YouTube).
+     * 3. Browser-specific window title inspection for web players (e.g. YouTube Music, YouTube, Spotify Web).
      */
-    _resolveAppInfo(stream) {
+    _resolveAppInfo(stream, usedMediaTitles = new Set()) {
         const appId = stream.get_application_id() || '';
         const streamName = stream.get_name() || '';
         const streamDesc = stream.get_description() || '';
@@ -198,10 +198,20 @@ export const AudioManager = GObject.registerClass({
         const appSys = Shell.AppSystem.get_default();
         let app = null;
 
-        // 1. Build candidates list for Shell.AppSystem lookup
+        // 1. Build candidates list for Shell.AppSystem lookup (including Snap package naming)
         const candidates = [];
         if (appId) {
-            candidates.push(appId, `${appId}.desktop`);
+            candidates.push(
+                appId,
+                `${appId}.desktop`,
+                `${appId}_${appId}.desktop`,
+                `snap.${appId}.${appId}.desktop`
+            );
+            if (appId.includes('.')) {
+                const parts = appId.split('.');
+                const last = parts[parts.length - 1];
+                candidates.push(last, `${last}.desktop`, `${last}_${last}.desktop`);
+            }
         }
         if (iconName && !this._isGenericString(iconName)) {
             candidates.push(iconName, `${iconName}.desktop`);
@@ -244,7 +254,7 @@ export const AudioManager = GObject.registerClass({
             }
         }
 
-        // Extract name from app or stream descriptions
+        // 3. Extract base name and icon
         let name = '';
         if (app) {
             name = app.get_name();
@@ -259,10 +269,19 @@ export const AudioManager = GObject.registerClass({
             name = _('Application');
         }
 
-        // 3. Match against window title for web apps (e.g. Spotify Web, YouTube)
-        const mediaName = this._findMatchingMediaTitle(app, appId, name, streamName, iconName);
-        if (mediaName) {
-            name = mediaName;
+        // 4. Web browser media stream detection (YouTube Music, YouTube, Spotify Web, etc.)
+        // ONLY perform window title analysis if the stream belongs to a generic web browser!
+        // Never override native desktop apps like Spotify, VLC, Discord, etc.
+        const isBrowser = (app && /chrome|chromium|firefox|brave|edge|opera|epiphany|browser/i.test(app.get_id() || '')) ||
+            (app && /chrome|chromium|firefox|brave|edge|opera|browser/i.test(app.get_name() || '')) ||
+            /chrome|chromium|firefox|brave|edge|opera|browser/i.test(appId || '');
+
+        if (isBrowser) {
+            const mediaTitle = this._detectBrowserMediaTitle(app, appId, usedMediaTitles);
+            if (mediaTitle) {
+                name = mediaTitle;
+                usedMediaTitles.add(mediaTitle);
+            }
         }
 
         const fallbackIcon = iconName || 'audio-card-symbolic';
@@ -270,23 +289,26 @@ export const AudioManager = GObject.registerClass({
     }
 
     /**
-     * Inspects active window titles to identify specific web media players.
+     * Inspects browser windows to identify specific active web players.
+     * Crucially differentiates between 'YouTube Music' and standard 'YouTube'.
      */
-    _findMatchingMediaTitle(app, appId, appName, streamName, iconName) {
+    _detectBrowserMediaTitle(app, appId, usedMediaTitles) {
         const windows = [];
         if (app && app.get_windows) {
             windows.push(...app.get_windows());
         }
 
+        // If app.get_windows() is empty on Wayland, inspect tabList strictly for this browser's windows
         if (windows.length === 0 && global.display && global.display.get_tab_list) {
             const tabList = global.display.get_tab_list(Meta.TabList.NORMAL, null);
-            const norm = (str) => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-            const tokens = [norm(appName), norm(streamName), norm(iconName), norm(appId)].filter(Boolean);
+            const browserTokens = ['chrome', 'chromium', 'firefox', 'brave', 'edge', 'opera'].filter(
+                t => (appId || '').toLowerCase().includes(t) || (app && (app.get_id() || '').toLowerCase().includes(t))
+            );
 
             for (const win of tabList) {
-                const wmClass = norm(win.get_wm_class());
-                const gtkId = norm(win.get_gtk_application_id());
-                if (tokens.some(t => wmClass.includes(t) || gtkId.includes(t))) {
+                const wmClass = (win.get_wm_class() || '').toLowerCase();
+                const gtkId = (win.get_gtk_application_id() || '').toLowerCase();
+                if (browserTokens.some(t => wmClass.includes(t) || gtkId.includes(t))) {
                     windows.push(win);
                 }
             }
@@ -297,16 +319,39 @@ export const AudioManager = GObject.registerClass({
             if (!title)
                 continue;
 
-            if (/spotify/i.test(title)) return 'Spotify';
-            if (/youtube/i.test(title)) return 'YouTube';
-            if (/soundcloud/i.test(title)) return 'SoundCloud';
-            if (/netflix/i.test(title)) return 'Netflix';
-            if (/twitch/i.test(title)) return 'Twitch';
-            if (/tidal/i.test(title)) return 'Tidal';
-            if (/apple\s*music/i.test(title)) return 'Apple Music';
-            if (/deezer/i.test(title)) return 'Deezer';
-            if (/bandcamp/i.test(title)) return 'Bandcamp';
+            let candidate = null;
+
+            // 1. YouTube Music MUST be evaluated before standard YouTube!
+            if (/youtube\s*music/i.test(title)) {
+                candidate = 'YouTube Music';
+            } else if (/youtube/i.test(title)) {
+                candidate = 'YouTube';
+            } else if (/spotify/i.test(title)) {
+                candidate = 'Spotify';
+            } else if (/soundcloud/i.test(title)) {
+                candidate = 'SoundCloud';
+            } else if (/apple\s*music/i.test(title)) {
+                candidate = 'Apple Music';
+            } else if (/amazon\s*music/i.test(title)) {
+                candidate = 'Amazon Music';
+            } else if (/netflix/i.test(title)) {
+                candidate = 'Netflix';
+            } else if (/twitch/i.test(title)) {
+                candidate = 'Twitch';
+            } else if (/tidal/i.test(title)) {
+                candidate = 'Tidal';
+            } else if (/deezer/i.test(title)) {
+                candidate = 'Deezer';
+            } else if (/bandcamp/i.test(title)) {
+                candidate = 'Bandcamp';
+            }
+
+            // Claim the candidate if not already used by another stream from this browser
+            if (candidate && !usedMediaTitles.has(candidate)) {
+                return candidate;
+            }
         }
+
         return null;
     }
 
@@ -335,6 +380,8 @@ export const AudioManager = GObject.registerClass({
 
         // 2. Application Sink Inputs
         const sinkInputs = this._control.get_sink_inputs() || [];
+        const usedMediaTitles = new Set();
+
         for (const stream of sinkInputs) {
             // Ignore system alert sounds (is_event_stream)
             if (Boolean(stream.is_event_stream))
@@ -349,7 +396,7 @@ export const AudioManager = GObject.registerClass({
             }
 
             this._connectStream(stream);
-            const { name, gicon, iconName } = this._resolveAppInfo(stream);
+            const { name, gicon, iconName } = this._resolveAppInfo(stream, usedMediaTitles);
             const streamId = stream.get_id().toString();
 
             newTargets.push({
