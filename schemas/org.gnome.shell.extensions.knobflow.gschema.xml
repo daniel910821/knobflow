@@ -61,7 +61,7 @@
     </key>
 
     <key name="debug-logging" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Enable Debug Logging</summary>
       <description>When true, prints detailed stream detection and knob events to journalctl.</description>
     </key>

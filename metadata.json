@@ -3,7 +3,6 @@
   "name": "KnobFlow",
   "description": "Control active application volumes and system audio using your mechanical keyboard knob",
   "shell-version": [
-    "50",
     "51"
   ],
   "url": "https://github.com/felipe/knobflow",
